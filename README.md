@@ -321,18 +321,6 @@ curl http://localhost:8080/actuator/health
 curl http://localhost:8080/actuator
 ```
 
-## Further Reading
-
-For a comprehensive technical deep-dive covering:
-- Docker and container orchestration explained step-by-step
-- Database setup and credentials management
-- Flyway migrations: how they work, when they run, version tracking
-- Database locking: types, when to use which, deadlock prevention
-- @Transactional annotation deep-dive
-- Testing concurrency and race conditions
-
-See [`docs/TECHNICAL_DEEP_DIVE.md`](docs/TECHNICAL_DEEP_DIVE.md)
-
 ## Concurrency Testing
 
 To test the concurrent transfer handling:
@@ -345,6 +333,3 @@ To test the concurrent transfer handling:
 ./mvnw test -Dtest=ConcurrencyTest
 ```
 
-## License
-
-MIT License
