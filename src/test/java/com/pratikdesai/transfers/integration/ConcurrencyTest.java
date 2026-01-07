@@ -117,7 +117,7 @@ class ConcurrencyTest {
         assertThat(account2.getBalance()).isEqualByComparingTo(transferred);
         assertThat(account1.getBalance()).isEqualByComparingTo(new BigDecimal("1000").subtract(transferred));
 
-        System.out.println("✅ Data integrity test passed!");
+        System.out.println("Data integrity test passed!");
         System.out.println("   Successful transfers: " + successCount.get());
         System.out.println("   Failed transfers: " + failCount.get());
         System.out.println("   Account 1 balance: " + account1.getBalance());
@@ -183,7 +183,7 @@ class ConcurrencyTest {
                 .as("At most 5 transfers should succeed with $500 available")
                 .isLessThanOrEqualTo(5);
 
-        System.out.println("✅ Overdraft prevention test passed!");
+        System.out.println("Overdraft prevention test passed!");
         System.out.println("   Successful transfers: " + successCount.get());
         System.out.println("   Failed transfers: " + failCount.get());
         System.out.println("   Account 1 balance: " + account1.getBalance());
@@ -197,7 +197,7 @@ class ConcurrencyTest {
         accountService.createAccount(new CreateAccountRequest(1L, "500"));
         accountService.createAccount(new CreateAccountRequest(2L, "500"));
 
-        // When: Concurrent bidirectional transfers (1→2 and 2→1)
+        // When: Concurrent bidirectional transfers (1->2 and 2->1)
         int threadCount = 20;
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
         CountDownLatch startLatch = new CountDownLatch(1);
@@ -257,7 +257,7 @@ class ConcurrencyTest {
                 .as("Total money should remain constant!")
                 .isEqualByComparingTo("1000");
 
-        System.out.println("✅ Deadlock prevention test passed!");
+        System.out.println("Deadlock prevention test passed!");
         System.out.println("   Test completed in time (no deadlock)");
         System.out.println("   Successful transfers: " + successCount.get());
         System.out.println("   Failed transfers: " + exceptions.size());
@@ -318,7 +318,7 @@ class ConcurrencyTest {
                 .as("Total money must be preserved in high-volume scenario!")
                 .isEqualByComparingTo("5000");
 
-        System.out.println("✅ High volume test passed!");
+        System.out.println("High volume test passed!");
         System.out.println("   Successful transfers: " + successCount.get());
         System.out.println("   Total money preserved: " + totalMoney);
     }

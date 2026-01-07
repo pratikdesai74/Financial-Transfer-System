@@ -33,7 +33,7 @@ echo "  Account 200: $(curl -s "$BASE_URL/accounts/200" | grep -o '"balance":"[^
 echo ""
 
 echo -e "${YELLOW}Step 2: Launching 10 concurrent transfer requests of \$100 each...${NC}"
-echo "  (Account 100 → Account 200)"
+echo "  (Account 100 -> Account 200)"
 echo ""
 
 # Launch 10 concurrent transfers
@@ -62,11 +62,11 @@ TOTAL=$(echo "$BALANCE_100 + $BALANCE_200" | bc)
 
 echo "=============================================="
 if [ "$TOTAL" == "1000" ]; then
-  echo -e "${GREEN}✅ TEST PASSED!${NC}"
+  echo -e "${GREEN}TEST PASSED${NC}"
   echo "  Total money preserved: \$$TOTAL"
   echo "  No data corruption occurred."
 else
-  echo -e "${RED}❌ TEST FAILED!${NC}"
+  echo -e "${RED}TEST FAILED${NC}"
   echo "  Total money: \$$TOTAL (expected \$1000)"
   echo "  Data corruption detected!"
 fi
@@ -82,10 +82,10 @@ RESPONSE=$(curl -s -X POST "$BASE_URL/transactions" \
   -d '{"source_account_id": 100, "destination_account_id": 200, "amount": "500"}')
 
 if echo "$RESPONSE" | grep -q "INSUFFICIENT_BALANCE"; then
-  echo -e "${GREEN}✅ Insufficient balance correctly rejected!${NC}"
+  echo -e "${GREEN}Insufficient balance correctly rejected${NC}"
   echo "  Response: $(echo $RESPONSE | grep -o '"message":"[^"]*"' | cut -d'"' -f4)"
 else
-  echo -e "${RED}❌ Should have been rejected!${NC}"
+  echo -e "${RED}Should have been rejected${NC}"
 fi
 
 echo ""
