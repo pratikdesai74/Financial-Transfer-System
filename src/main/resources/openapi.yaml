@@ -1,0 +1,289 @@
+openapi: 3.0.3
+info:
+  title: Internal Transfers API
+  description: |
+    RESTful API for managing internal financial transfers between accounts.
+
+    ## Features
+    - Create accounts with initial balances
+    - Query account balances
+    - Transfer funds between accounts with ACID compliance
+
+    ## Technical Highlights
+    - High-precision decimal support (up to 8 decimal places)
+    - Pessimistic locking for concurrent transfer safety
+    - Full transaction logging for audit trails
+  version: 1.0.0
+  contact:
+    name: API Support
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+tags:
+  - name: Accounts
+    description: Account management operations
+  - name: Transactions
+    description: Fund transfer operations
+
+paths:
+  /accounts:
+    post:
+      tags:
+        - Accounts
+      summary: Create a new account
+      description: Creates a new account with the specified ID and initial balance
+      operationId: createAccount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAccountRequest'
+            examples:
+              basic:
+                summary: Basic account creation
+                value:
+                  account_id: 123
+                  initial_balance: "100.23344"
+              zero_balance:
+                summary: Account with zero balance
+                value:
+                  account_id: 456
+                  initial_balance: "0"
+      responses:
+        '201':
+          description: Account created successfully
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "VALIDATION_ERROR"
+                message: "Invalid request data"
+                details:
+                  - "accountId: Account ID must be a positive number"
+                timestamp: "2024-01-15T10:30:00Z"
+        '409':
+          description: Account already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "ACCOUNT_ALREADY_EXISTS"
+                message: "Account already exists with ID: 123"
+                timestamp: "2024-01-15T10:30:00Z"
+
+  /accounts/{accountId}:
+    get:
+      tags:
+        - Accounts
+      summary: Get account details
+      description: Retrieves account information including current balance
+      operationId: getAccount
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          description: Unique identifier of the account
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          example: 123
+      responses:
+        '200':
+          description: Account details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+              example:
+                account_id: 123
+                balance: "100.23344"
+        '404':
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "ACCOUNT_NOT_FOUND"
+                message: "Account not found with ID: 999"
+                timestamp: "2024-01-15T10:30:00Z"
+
+  /transactions:
+    post:
+      tags:
+        - Transactions
+      summary: Create a transfer transaction
+      description: |
+        Transfers funds from source account to destination account.
+
+        **Important behaviors:**
+        - Transfer is atomic (all-or-nothing)
+        - Source account must have sufficient balance
+        - Source and destination must be different accounts
+        - Uses pessimistic locking to prevent race conditions
+      operationId: createTransaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+            examples:
+              basic_transfer:
+                summary: Basic transfer
+                value:
+                  source_account_id: 123
+                  destination_account_id: 456
+                  amount: "100.12345"
+              small_transfer:
+                summary: Small amount transfer
+                value:
+                  source_account_id: 123
+                  destination_account_id: 456
+                  amount: "0.00001"
+      responses:
+        '201':
+          description: Transfer completed successfully
+        '400':
+          description: Invalid transfer request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                insufficient_balance:
+                  summary: Insufficient balance
+                  value:
+                    error: "INSUFFICIENT_BALANCE"
+                    message: "Insufficient balance in account 123. Available: 50.00, Required: 100.00"
+                    timestamp: "2024-01-15T10:30:00Z"
+                same_account:
+                  summary: Same source and destination
+                  value:
+                    error: "INVALID_TRANSFER"
+                    message: "Source and destination accounts must be different"
+                    timestamp: "2024-01-15T10:30:00Z"
+                invalid_amount:
+                  summary: Invalid amount
+                  value:
+                    error: "INVALID_TRANSFER"
+                    message: "Transfer amount must be greater than zero"
+                    timestamp: "2024-01-15T10:30:00Z"
+        '404':
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "ACCOUNT_NOT_FOUND"
+                message: "Account not found with ID: 999"
+                timestamp: "2024-01-15T10:30:00Z"
+
+  /actuator/health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      description: Returns the health status of the application
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Application is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "UP"
+
+components:
+  schemas:
+    CreateAccountRequest:
+      type: object
+      required:
+        - account_id
+        - initial_balance
+      properties:
+        account_id:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Unique identifier for the account (must be positive)
+          example: 123
+        initial_balance:
+          type: string
+          pattern: '^-?\d+(\.\d+)?$'
+          description: Initial balance as a decimal string (non-negative)
+          example: "100.23344"
+
+    AccountResponse:
+      type: object
+      properties:
+        account_id:
+          type: integer
+          format: int64
+          description: Unique identifier of the account
+          example: 123
+        balance:
+          type: string
+          description: Current balance as a decimal string
+          example: "100.23344"
+
+    TransferRequest:
+      type: object
+      required:
+        - source_account_id
+        - destination_account_id
+        - amount
+      properties:
+        source_account_id:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Account ID to transfer from
+          example: 123
+        destination_account_id:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Account ID to transfer to
+          example: 456
+        amount:
+          type: string
+          pattern: '^\d+(\.\d+)?$'
+          description: Amount to transfer as a decimal string (must be positive)
+          example: "100.12345"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error code for programmatic handling
+          example: "VALIDATION_ERROR"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Invalid request data"
+        details:
+          type: array
+          items:
+            type: string
+          description: Additional error details (for validation errors)
+          example: ["accountId: Account ID must be a positive number"]
+        timestamp:
+          type: string
+          format: date-time
+          description: When the error occurred
+          example: "2024-01-15T10:30:00Z"
